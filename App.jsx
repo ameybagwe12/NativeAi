@@ -6,44 +6,22 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
-// const apiKey = '';
-
+const {GoogleGenerativeAI} = require('@google/generative-ai');
+import {API_KEY} from './api';
 const App = () => {
-  const [input, setInput] = useState('');
-  const [output, setOutput] = useState('');
+  const [userInput, setUserInput] = useState('');
+  const [chat, setChat] = useState('');
   const [error, setError] = useState('');
 
+  const genAI = new GoogleGenerativeAI(API_KEY);
+  const model = genAI.getGenerativeModel({model: 'gemini-1.5-flash'});
+
   const handleInput = async () => {
-    try {
-      const response = await fetch(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [{role: 'user', content: input}],
-          }),
-        },
-      );
-
-      const data = await response.json();
-      console.log(data);
-      if (response.ok) {
-        setOutput(data.choices[0].message.content);
-        setError('');
-      } else {
-        setError(data.error.message);
-      }
-    } catch (error) {
-      console.log(error);
-      setError('An error occurred while fetching the response.');
-    }
-
-    setInput('');
+    const result = await model.generateContent(userInput);
+    const response = result.response;
+    const text = response.text();
+    setChat(text);
+    console.log(text);
   };
 
   return (
@@ -54,15 +32,15 @@ const App = () => {
           <TextInput
             style={styles.input}
             placeholder="Type your message here"
-            onChangeText={text => setInput(text)}
-            value={input}
+            onChangeText={text => setUserInput(text)}
+            value={userInput}
           />
           <TouchableOpacity style={styles.sendButton} onPress={handleInput}>
             <Text style={styles.sendButtonText}>Send</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.outputContainer}>
-          {output ? <Text style={styles.output}>{output}</Text> : null}
+          {chat ? <Text style={styles.output}>{chat}</Text> : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
       </View>
@@ -122,6 +100,7 @@ const styles = StyleSheet.create({
   },
   output: {
     fontSize: 16,
+    backgroundColor: 'black',
   },
   error: {
     fontSize: 16,
